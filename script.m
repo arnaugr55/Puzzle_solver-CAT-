@@ -30,5 +30,13 @@ pixel_labels = imsegkmeans(ab,nColors,'NumAttempts',3);
 imshow(pixel_labels,[]); title('Image Labeled by Cluster Index');
 pixel_labels2 = im2bw(pixel_labels,1/255);
 imshow(pixel_labels2,[]);
+%opcio b) (No es molt bona)
+gris=rgb2gray(array_name{2,29});
+gris2=imadjust(gris);
+figure;imshow(gris2);
+level=graythresh(gris2);
+disp(level);
+bw=imbinarize(gris2,level);
+figure;imshow(bw);
 
 %altres opcions, detectar contorns i mplir lo del mig
