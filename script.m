@@ -23,16 +23,18 @@ imshow(array_name{2,29});
 
 %treiem el fons de les imatges
 %aqui hauriem d'anar mirant metodes per veure quin es el que dona millors resultats
-%opcio a)
-lab_he = rgb2lab(array_name{2,29});
+%{
+%opcio a) Utilitzar un kmeans, el negre serà el fons
+lab_he = rgb2lab(array_name{2,11});
 ab = lab_he(:,:,2:3); ab = im2single(ab); nColors = 8; % repeat the clustering 3 times to avoid local minima
 pixel_labels = imsegkmeans(ab,nColors,'NumAttempts',3);
 imshow(pixel_labels,[]); title('Image Labeled by Cluster Index');
 pixel_labels2 = im2bw(pixel_labels,1/255);
 imshow(pixel_labels2,[]);
 
-%opcio b) 
-gris=rgb2gray(array_name{2,29});
+
+%opcio b) Mirant l'histograma de la imatge
+gris=rgb2gray(array_name{2,21});
 fontSize = 25;
 [rows, columns, numberOfColorChannels] = size(gris);
 % Display the image.
@@ -89,7 +91,19 @@ axis on;
 axis image; % Make sure image is not artificially stretched because of screen's aspect ratio.
 title('Final Cleaned Mask', 'FontSize', fontSize);
 drawnow;
+%}
 
 
+%opcio c) utilitzant el detector de contorns i omplint els forats de dins - CREC QUE ES LA MILLOR OPCIO
+I = rgb2gray(array_name{2,15});
+detector = 'Prewitt';%despres de fer vàries proves arribem a la conclusió que el millor detector es el Prewitt amb el valor 0.25
+[~,threshold] = edge(I,detector); fudgeFactor = 0.25; BWs = edge(I,detector,threshold * fudgeFactor); %li apliquem el detector Prewitt
+se90 = strel('line',3,90); se0 = strel('line',3,0);
+BWsdil = imdilate(BWs,[se90 se0]); imshow(BWsdil); title('Dilated Gradient Mask') %fem una dilatació
+BWdfill = imfill(BWsdil,'holes'); imshow(BWdfill); title('Binary Image with Filled Holes') %ompliem els forats de dins la peça
+BWnobord = imclearborder(BWdfill,4); imshow(BWnobord); title('Cleared Border Image') %treiem els bordes de la peça
+seD = strel('diamond',1); BWfinal = imerode(BWnobord,seD); BWfinal = imerode(BWfinal,seD); imshow(BWfinal); title('Segmented Image');%fem l'erode per 'invertir' la dilatació 
+%imshow(labeloverlay(I,BWfinal)); title('Mask Over Original Image')
 
-%altres opcions, detectar contorns i mplir lo del mig
+BW2 = bwareaopen(BWfinal, 400); %eliminem les illes que no son la peça
+imshowpair(array_name{2,15},BW2,'montage')
