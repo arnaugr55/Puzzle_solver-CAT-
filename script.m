@@ -107,3 +107,23 @@ seD = strel('diamond',1); BWfinal = imerode(BWnobord,seD); BWfinal = imerode(BWf
 
 BW2 = bwareaopen(BWfinal, 400); %eliminem les illes que no son la peça
 imshowpair(array_name{2,15},BW2,'montage')
+
+%la peça 15 pot donar problemes
+
+%si fem la resolucio 2, la dels costats, utlitzem les imatges amb blanc i negre
+
+%eliminem les linies i columnes que no hi ha cap pixel de peça
+[rows, columns] = find(BW2);
+row1 = min(rows);
+row2 = max(rows)-row1;
+col1 = min(columns);
+col2 = max(columns)-col1;
+BWretallat = imcrop(BW2,[col1 row1 col2 row2]); %retallem
+imshow(BWretallat); title('Imatge peça retallada')
+
+%detectem el tipus dels costats de les peces
+%havia pensat en erosionar la imatge. aixi crec que es podra veure si un
+%costat es golf, cap o borde.
+BWretallat = imerode(BWretallat,se90);
+
+imshow(BWprova); title('Imatge peça retallada')
