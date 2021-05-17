@@ -112,14 +112,32 @@ imshowpair(array_name{2,15},BW2,'montage')
 
 %si fem la resolucio 2, la dels costats, utlitzem les imatges amb blanc i negre
 
+%Rotació de la imatge per que estigui recta
+
+%figure; imshow(BW2);
+%disp("selecciona les esquines que estiguin més a dalt i d'esquerra a dreta");
+%[x,y]=ginput(2);
+%d1=pdist2(x,y);
+m1=[x(1) y(1); x(2) y(2)]; %Matriu dels punts de la hipotenusa
+m2=[x(1) y(1); x(1) y(2)]; %Matriu dels punts del costat adjacent
+h=pdist(m1); %distància de la hipotenusa
+a=pdist(m2); %distància del costat adjacent
+c=a/h; %calcul del cosinus per mitjà dels costats
+rad=acos(c); %Obtenim l'angle en radians amb l'arcosinus
+deg=rad2deg(rad); %Passem l'angle a graus
+J=imrotate(BW2,-deg,'bilinear','loose'); %Rotem la imatge
+figure; imshow(J);
+%Ara s'hauria de guardar pels 4 possibles costats
+
+
 %eliminem les linies i columnes que no hi ha cap pixel de peça
-[rows, columns] = find(BW2);
+[rows, columns] = find(J);
 row1 = min(rows);
 row2 = max(rows)-row1;
 col1 = min(columns);
 col2 = max(columns)-col1;
-BWretallat = imcrop(BW2,[col1 row1 col2 row2]); %retallem
-imshow(BWretallat); title('Imatge peça retallada')
+BWretallat = imcrop(J,[col1 row1 col2 row2]); %retallem
+figure; imshow(BWretallat); title('Imatge peça retallada')
 
 %detectem el tipus dels costats de les peces
 %havia pensat en erosionar la imatge. aixi crec que es podra veure si un
