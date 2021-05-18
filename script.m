@@ -31,8 +31,6 @@ pixel_labels = imsegkmeans(ab,nColors,'NumAttempts',3);
 imshow(pixel_labels,[]); title('Image Labeled by Cluster Index');
 pixel_labels2 = im2bw(pixel_labels,1/255);
 imshow(pixel_labels2,[]);
-
-
 %opcio b) Mirant l'histograma de la imatge
 gris=rgb2gray(array_name{2,21});
 fontSize = 25;
@@ -95,7 +93,7 @@ drawnow;
 
 
 %opcio c) utilitzant el detector de contorns i omplint els forats de dins - CREC QUE ES LA MILLOR OPCIO
-I = rgb2gray(array_name{2,15});
+I = rgb2gray(array_name{2,8});
 detector = 'Prewitt';%despres de fer vàries proves arribem a la conclusió que el millor detector es el Prewitt amb el valor 0.25
 [~,threshold] = edge(I,detector); fudgeFactor = 0.25; BWs = edge(I,detector,threshold * fudgeFactor); %li apliquem el detector Prewitt
 se90 = strel('line',3,90); se0 = strel('line',3,0);
@@ -106,43 +104,39 @@ seD = strel('diamond',1); BWfinal = imerode(BWnobord,seD); BWfinal = imerode(BWf
 %imshow(labeloverlay(I,BWfinal)); title('Mask Over Original Image')
 
 BW2 = bwareaopen(BWfinal, 400); %eliminem les illes que no son la peça
-imshowpair(array_name{2,15},BW2,'montage')
+imshowpair(array_name{2,8},BW2,'montage')
 
 %la peça 15 pot donar problemes
 
 %si fem la resolucio 2, la dels costats, utlitzem les imatges amb blanc i negre
 
 %Rotació de la imatge per que estigui recta
-
-figure; imshow(BW2);
-disp("selecciona les esquines que estiguin més a dalt i d'esquerra a dreta");
+figure; imshow(labeloverlay(I,BW2));
+disp("Selecciona les cantonades que estiguin més a dalt i d'esquerra a dreta");
 [x,y]=ginput(2);
 m1=[x(1) y(1); x(2) y(2)]; %Matriu dels punts de la hipotenusa
 m2=[x(1) y(1); x(1) y(2)]; %Matriu dels punts del costat adjacent
 h=pdist(m1); %distància de la hipotenusa
 a=pdist(m2); %distància del costat adjacent
-c=a/h; %calcul del cosinus per mitjà dels costats
-rad=acos(c); %Obtenim l'angle en radians amb l'arcosinus
+c=a/h; %càlcul del cosinus per mitjà dels costats
+rad=acos(c); %Obtenim l'angle en radiants amb l'arcosinus
 deg=rad2deg(rad); %Passem l'angle a graus
-J=imrotate(BW2,-deg,'bilinear','loose'); %Rotem la imatge per ficar-la recta
+J=imrotate(BW2,-deg,'bilinear','loose'); %Rotem la imatge per posar-la recta
 J90=imrotate(J,-90,'bilinear','loose'); %Rotem la imatge 90 graus
 J180=imrotate(J,-180,'bilinear','loose'); %Rotem la imatge 180 graus
 J270=imrotate(J,-270,'bilinear','loose'); %Rotem la imatge 270 graus
-figure; imshowpair(J,J180,'montage');
-
+quatre_pos1 = {J,J90,J180,J270};
+figure; montage(quatre_pos1); title('Les 4 rotacions de la peça (0, 90, 180 & 270º)')
 
 %eliminem les linies i columnes que no hi ha cap pixel de peça
-[rows, columns] = find(J);
-row1 = min(rows);
-row2 = max(rows)-row1;
-col1 = min(columns);
-col2 = max(columns)-col1;
-BWretallat = imcrop(J,[col1 row1 col2 row2]); %retallem
-figure; imshow(BWretallat); title('Imatge peça retallada')
-
-%detectem el tipus dels costats de les peces
-%havia pensat en erosionar la imatge. aixi crec que es podra veure si un
-%costat es golf, cap o borde.
-BWretallat = imerode(BWretallat,se90);
-
-imshow(BWprova); title('Imatge peça retallada')
+for i=1:4
+    rot = quatre_pos1{i};
+    [rows, columns] = find(rot);
+    row1 = min(rows);
+    row2 = max(rows)-row1;
+    col1 = min(columns);
+    col2 = max(columns)-col1;
+    retallat = imcrop(rot,[col1 row1 col2 row2]); %retallem
+    quatre_pos2{i} = retallat;    
+end
+figure; montage(quatre_pos2, 'Size', [2 2]); title('Les rotacions amb la imatge peça retallada')
