@@ -91,9 +91,9 @@ title('Final Cleaned Mask', 'FontSize', fontSize);
 drawnow;
 %}
 
-
+n_ima = 1;
 %opcio c) utilitzant el detector de contorns i omplint els forats de dins - CREC QUE ES LA MILLOR OPCIO
-I = rgb2gray(array_name{2,8});
+I = rgb2gray(array_name{2,n_ima});
 detector = 'Prewitt';%despres de fer vàries proves arribem a la conclusió que el millor detector es el Prewitt amb el valor 0.25
 [~,threshold] = edge(I,detector); fudgeFactor = 0.25; BWs = edge(I,detector,threshold * fudgeFactor); %li apliquem el detector Prewitt
 se90 = strel('line',3,90); se0 = strel('line',3,0);
@@ -104,7 +104,7 @@ seD = strel('diamond',1); BWfinal = imerode(BWnobord,seD); BWfinal = imerode(BWf
 %imshow(labeloverlay(I,BWfinal)); title('Mask Over Original Image')
 
 BW2 = bwareaopen(BWfinal, 400); %eliminem les illes que no son la peça
-imshowpair(array_name{2,8},BW2,'montage')
+imshowpair(array_name{2,n_ima},BW2,'montage')
 
 %la peça 15 pot donar problemes
 
@@ -112,8 +112,14 @@ imshowpair(array_name{2,8},BW2,'montage')
 
 %Rotació de la imatge per que estigui recta
 figure; imshow(labeloverlay(I,BW2));
-disp("Selecciona les cantonades que estiguin més a dalt i d'esquerra a dreta");
-[x,y]=ginput(2);
+file = strcat('punts/punts',num2str(n_ima),'.mat');
+if isfile(file)
+    load(file);
+else
+    disp("Selecciona les cantonades que estiguin més a dalt i d'esquerra a dreta (si no dona bon resultat, posa les de l'esq, de dalt a baix)");
+    [x,y]=ginput(2);
+    save(file,'x','y');
+end
 m1=[x(1) y(1); x(2) y(2)]; %Matriu dels punts de la hipotenusa
 m2=[x(1) y(1); x(1) y(2)]; %Matriu dels punts del costat adjacent
 h=pdist(m1); %distància de la hipotenusa
@@ -137,6 +143,13 @@ for i=1:4
     col1 = min(columns);
     col2 = max(columns)-col1;
     retallat = imcrop(rot,[col1 row1 col2 row2]); %retallem
-    quatre_pos2{i} = retallat;    
+    quatre_pos2{i} = retallat;
 end
 figure; montage(quatre_pos2, 'Size', [2 2]); title('Les rotacions amb la imatge peça retallada')
+
+%detectem el tipus dels costats de les peces
+%havia pensat en erosionar la imatge. aixi crec que es podra veure si un
+%costat es golf, cap o borde.
+%BWretallat = imerode(BWretallat,se90);
+
+%imshow(BWprova); title('Imatge peça retallada')
