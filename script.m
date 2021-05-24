@@ -91,72 +91,99 @@ title('Final Cleaned Mask', 'FontSize', fontSize);
 drawnow;
 %}
 
-n_ima = 4;
-%opcio c) utilitzant el detector de contorns i omplint els forats de dins - CREC QUE ES LA MILLOR OPCIO
-I = rgb2gray(array_name{2,n_ima});
-detector = 'Prewitt';%despres de fer vàries proves arribem a la conclusió que el millor detector es el Prewitt amb el valor 0.25
-[~,threshold] = edge(I,detector); fudgeFactor = 0.25; BWs = edge(I,detector,threshold * fudgeFactor); %li apliquem el detector Prewitt
-se90 = strel('line',3,90); se0 = strel('line',3,0);
-BWsdil = imdilate(BWs,[se90 se0]); imshow(BWsdil); title('Dilated Gradient Mask') %fem una dilatació
-BWdfill = imfill(BWsdil,'holes'); imshow(BWdfill); title('Binary Image with Filled Holes') %ompliem els forats de dins la peça
-BWnobord = imclearborder(BWdfill,4); imshow(BWnobord); title('Cleared Border Image') %treiem els bordes de la peça
-seD = strel('diamond',1); BWfinal = imerode(BWnobord,seD); BWfinal = imerode(BWfinal,seD); imshow(BWfinal); title('Segmented Image');%fem l'erode per 'invertir' la dilatació 
-%imshow(labeloverlay(I,BWfinal)); title('Mask Over Original Image')
+contenidor_info_peca = cell(4,3, n_ima); %guarda la representacio, el num_de_gir i el costats a cada orinetacio... de cada peça
+for n_ima=1:35
+    %opcio c) utilitzant el detector de contorns i omplint els forats de dins - CREC QUE ES LA MILLOR OPCIO
+    I = rgb2gray(array_name{2,n_ima});
+    detector = 'Prewitt';%despres de fer vàries proves arribem a la conclusió que el millor detector es el Prewitt amb el valor 0.25
+    [~,threshold] = edge(I,detector); fudgeFactor = 0.25; BWs = edge(I,detector,threshold * fudgeFactor); %li apliquem el detector Prewitt
+    se90 = strel('line',3,90); se0 = strel('line',3,0);
+    BWsdil = imdilate(BWs,[se90 se0]); %imshow(BWsdil); title('Dilated Gradient Mask') %fem una dilatació
+    BWdfill = imfill(BWsdil,'holes'); %imshow(BWdfill); title('Binary Image with Filled Holes') %ompliem els forats de dins la peça
+    BWnobord = imclearborder(BWdfill,4); %imshow(BWnobord); title('Cleared Border Image') %treiem els bordes de la peça
+    seD = strel('diamond',1); BWfinal = imerode(BWnobord,seD); BWfinal = imerode(BWfinal,seD); %imshow(BWfinal); title('Segmented Image');%fem l'erode per 'invertir' la dilatació 
+    %imshow(labeloverlay(I,BWfinal)); title('Mask Over Original Image')
 
-BW2 = bwareaopen(BWfinal, 600); %eliminem les illes que no son la peça
-imshowpair(array_name{2,n_ima},BW2,'montage')
+    BW2 = bwareaopen(BWfinal, 600); %eliminem les illes que no son la peça
+    %imshowpair(array_name{2,n_ima},BW2,'montage')
 
-%la peça 15 pot donar problemes
+    %la peça 15 i 16 poden donar problemes
 
-%si fem la resolucio 2, la dels costats, utlitzem les imatges amb blanc i negre
+    %si fem la resolucio 2, la dels costats, utlitzem les imatges amb blanc i negre
 
-%Rotació de la imatge per que estigui recta
-file = strcat('punts/punts',num2str(n_ima),'.mat');
-if isfile(file)
-    load(file);
-else
-    figure; imshow(labeloverlay(I,BW2));
-    disp("Selecciona les cantonades que estiguin més a dalt i d'esquerra a dreta (si no dona bon resultat, posa les de l'esq, de dalt a baix)");
-    [x,y]=ginput(2);
-    save(file,'x','y');
-end
-m1=[x(1) y(1); x(2) y(2)]; %Matriu dels punts de la hipotenusa
-m2=[x(1) y(1); x(1) y(2)]; %Matriu dels punts del costat adjacent
-h=pdist(m1); %distància de la hipotenusa
-a=pdist(m2); %distància del costat adjacent
-c=a/h; %càlcul del cosinus per mitjà dels costats
-rad=acos(c); %Obtenim l'angle en radiants amb l'arcosinus
-deg=rad2deg(rad); %Passem l'angle a graus
-J=imrotate(BW2,-deg,'bilinear','loose'); %Rotem la imatge per posar-la recta
-J90=imrotate(J,-90,'bilinear','loose'); %Rotem la imatge 90 graus
-J180=imrotate(J,-180,'bilinear','loose'); %Rotem la imatge 180 graus
-J270=imrotate(J,-270,'bilinear','loose'); %Rotem la imatge 270 graus
-quatre_pos1 = {J,J90,J180,J270};
-figure; montage(quatre_pos1); title('Les 4 rotacions de la peça (0, 90, 180 & 270º)')
-
-%eliminem les linies i columnes que no hi ha cap pixel de peça
-for i=1:4
-    rot = quatre_pos1{i};
-    [rows, columns] = find(rot);
-    row1 = min(rows);
-    row2 = max(rows)-row1;
-    col1 = min(columns);
-    col2 = max(columns)-col1;
-    retallat = imcrop(rot,[col1 row1 col2 row2]); %retallem
-    quatre_pos2{i} = retallat;
-    
-    %busquem els tipus de costats
-    [rowr, colr] = size(retallat);
-    costat = imcrop(retallat, [0 0 colr rowr/10]); %el de dalt
-    perc = sum(costat(:)) / (colr * fix(rowr/10)); %percentatge de pixels de puzzle
-    %1er_costat:dalt, 2n_costat:esq, 3er_costat:baix, 4t_costat:dret
-    %mirant vàries peces veiem que depenent del precentatges, un costat serà cap, golf o marge
-    if perc < 0.23
-        costats_peca(i) = "cap";
-    elseif perc < 0.5
-        costats_peca(i) = "golf";
+    %Rotació de la imatge per que estigui recta
+    file = strcat('punts/punts',num2str(n_ima),'.mat');
+    if isfile(file)
+        load(file);
     else
-        costats_peca(i) = "marge";
+        figure; imshow(labeloverlay(I,BW2));
+        disp("Selecciona les cantonades que estiguin més a dalt i d'esquerra a dreta (si no dona bon resultat, posa les de l'esq, de dalt a baix)");
+        [x,y]=ginput(2);
+        save(file,'x','y');
     end
+    m1=[x(1) y(1); x(2) y(2)]; %Matriu dels punts de la hipotenusa
+    m2=[x(1) y(1); x(1) y(2)]; %Matriu dels punts del costat adjacent
+    h=pdist(m1); %distància de la hipotenusa
+    a=pdist(m2); %distància del costat adjacent
+    c=a/h; %càlcul del cosinus per mitjà dels costats
+    rad=acos(c); %Obtenim l'angle en radiants amb l'arcosinus
+    deg=rad2deg(rad); %Passem l'angle a graus
+    J=imrotate(BW2,-deg,'bilinear','loose'); %Rotem la imatge per posar-la recta
+    J90=imrotate(J,-90,'bilinear','loose'); %Rotem la imatge 90 graus
+    J180=imrotate(J,-180,'bilinear','loose'); %Rotem la imatge 180 graus
+    J270=imrotate(J,-270,'bilinear','loose'); %Rotem la imatge 270 graus
+    quatre_pos1 = {J,J90,J180,J270};
+    %figure; montage(quatre_pos1); title('Les 4 rotacions de la peça (0, 90, 180 & 270º)')
+
+    %eliminem les linies i columnes que no hi ha cap pixel de peça
+    costats_peca = strings(1,4);
+    for i=1:4
+        rot = quatre_pos1{i};
+        [rows, columns] = find(rot);
+        row1 = min(rows);
+        row2 = max(rows)-row1;
+        col1 = min(columns);
+        col2 = max(columns)-col1;
+        retallat = imcrop(rot,[col1 row1 col2 row2]); %retallem
+        quatre_pos2{i} = retallat;
+
+        %busquem els tipus de costats
+        [rowr, colr] = size(retallat);
+        costat = imcrop(retallat, [0 0 colr rowr/10]); %el de dalt
+        perc = sum(costat(:)) / (colr * fix(rowr/10)); %percentatge de pixels de puzzle
+        %1er_costat:dalt, 2n_costat:esq, 3er_costat:baix, 4t_costat:dret
+        %mirant vàries peces veiem que depenent del precentatges, un costat serà cap, golf o marge
+        if perc < 0.2375
+            costats_peca(i) = "cap";
+        elseif perc < 0.5
+            costats_peca(i) = "golf";
+        else
+            costats_peca(i) = "marge";
+        end
+        contenidor_info_peca{i,1,n_ima} = retallat;
+        contenidor_info_peca{i,2,n_ima} = i;
+        if i==4
+            n_ima
+            contenidor_info_peca{1,3,n_ima} = costats_peca;
+            contenidor_info_peca{2,3,n_ima} = [costats_peca(2:4),costats_peca(1)];
+            contenidor_info_peca{3,3,n_ima} = [costats_peca(3:4),costats_peca(1:2)];
+            contenidor_info_peca{4,3,n_ima} = [costats_peca(4),costats_peca(1:3)];
+        end
+    end
+    %figure; montage(quatre_pos2, 'Size', [2 2]); title('Les rotacions amb la imatge peça retallada')
+
 end
-figure; montage(quatre_pos2, 'Size', [2 2]); title('Les rotacions amb la imatge peça retallada')
+%un cop tenim guardades les 4 imatges amb el seu costat, apliquem un
+%algoritme de bactracking per decidir on va cada peça
+
+graella_peces = cell(5,7,2);%guarda el nom de cada peça (im1...im35) i la seva forma (1,2,3,4)
+ppc = "im"+randperm(35); %les peces que falten per colocar
+
+
+%a partir d'haver situat la primera peça, hem de situar a la graella les 34 restants
+graella_peces{1,1,1} = 'im1';
+graella_peces{1,1,2} = 3;
+ppc = ppc(ppc~='im1');
+
+for ola=1:4 %comença el bactracking per a situar les peces correctament al seu lloc corresponent de la graella i en la seva correcta orientació
+end
