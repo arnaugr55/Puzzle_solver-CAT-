@@ -185,5 +185,7 @@ graella_peces{1,1,1} = 'im1';
 graella_peces{1,1,2} = 3;
 ppc = ppc(ppc~='im1');
 
-for ola=1:4 %comença el bactracking per a situar les peces correctament al seu lloc corresponent de la graella i en la seva correcta orientació
+for ola=1:34 %comença el bactracking per a situar les peces correctament al seu lloc corresponent de la graella i en la seva correcta orientació
+  while //fer una funcio recursgraella_pecesiva?
+  peça = ppc
 end
